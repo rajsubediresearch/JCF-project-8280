@@ -362,4 +362,291 @@ Generating model: **GLM**, $C'(t) = r\, C^{p}(1 - C/K)$
 Final epidemic size reaches about 99% of $K$ by week 45, so the series
 covers a full rise, peak and decline. True mean incidence peaks at \~121
 in weeks 19-20; the observed (noisy) series peaks at 136 in week 18.
+# 0. Filling in the tables
+
+Three CSV files hold every number this report needs:
+
+  -----------------------------------------------------------------------
+  File                                Contents
+  ----------------------------------- -----------------------------------
+  `forecast_metrics_summary.csv`      per model, per window: MAE, MSE,
+                                      coverage, WIS, AICc
+
+  `ensemble_scheme_comparison.csv`    one row per weighting scheme, plus
+                                      WIS skill
+
+  `jcf_weight_trajectories.csv`       model weights by window and
+                                      $\lambda$
+  -----------------------------------------------------------------------
+
+Open each in Excel, copy the block, and paste it over the placeholder
+tables below. In Word, *Insert → Table → Convert Text to Table* turns
+pasted comma-separated text into a real table.
+
+# 1. Data
+
+\[NAME YOUR DATASET. Say i) what the counts are: confirmed cases?
+deaths?, ii) the time unit, iii) how many points, iv) where it came
+from, and v) any trimming applied. The datasets README has the sourcing
+details.\]
+
+Window design used:
+
+  -----------------------------------------------------------------------
+  Setting                          Value
+  -------------------------------- --------------------------------------
+  Calibration period $C$           \[20\]
+
+  Forecast horizon $H$             \[4\]
+
+  Window shift $s$                 \[4\]
+
+  Number of windows $W$            \[5\]
+
+  Candidate models                 \[GLM, Richards, Gompertz\]
+
+  Error structure (`dist1`)        \[3 --- negative binomial\]
+
+  Bootstrap replicates $B$         \[300\]
+  -----------------------------------------------------------------------
+
+\[CONFIRM $H \leq s$ HOLDS. If it does not, JCF would be using data not
+yet available in real time, and `create_ensemble_jcf` would have refused
+to run.\]
+
+# 2. Individual model fits
+
+\[COMMENT ON FIT QUALITY. Do the parameter estimates look stable across
+windows, or do they swing? Wide bootstrap parameter distributions in
+later windows often mean the model is straining to follow a shape it
+cannot produce.\]
+
+<figure>
+<img src="media/image1.png" style="width:5.83333in;height:4.53565in"
+alt="GLM model fit, window 1" />
+<figcaption aria-hidden="true"><p>GLM model fit, window
+1</p></figcaption>
+</figure>
+
+<figure>
+<img src="media/image2.png" style="width:5.83333in;height:4.53565in"
+alt="Richards model fit, window 1" />
+<figcaption aria-hidden="true"><p>Richards model fit, window
+1</p></figcaption>
+</figure>
+
+# 3. Individual model forecasts
+
+<figure>
+<img src="media/image3.png" style="width:5.83333in;height:1.94444in"
+alt="All models, window 1 (earliest window)" />
+<figcaption aria-hidden="true"><p>All models, window 1 (earliest
+window)</p></figcaption>
+</figure>
+
+<figure>
+<img src="media/image4.png" style="width:5.83333in;height:1.94444in"
+alt="All models, window 5 (latest window)" />
+<figcaption aria-hidden="true"><p>All models, window 5 (latest
+window)</p></figcaption>
+</figure>
+
+\[COMPARE THE TWO. Which model looks best early, and is it still best
+late? If the ranking changes between these two figures, that is the
+phenomenon this whole project is about. If one model dominates
+throughout, say so --- that is a legitimate finding, and it predicts
+that ensemble weighting will not help much.\]
+
+# 4. Baseline ensemble (calibration-only weights)
+
+Models weighted by inverse calibration WIS,
+$\omega_{i} \propto 1/{WIS}_{i}^{cal}$, combined with the linear pool.
+
+<figure>
+<img src="media/image5.png" style="width:5.83333in;height:2.43289in"
+alt="Calibration-only ensemble vs individual models, window 3" />
+<figcaption aria-hidden="true"><p>Calibration-only ensemble vs
+individual models, window 3</p></figcaption>
+</figure>
+
+<figure>
+<img src="media/image6.png" style="width:5.83333in;height:2.33259in"
+alt="Performance: individual models vs calibration-only ensemble" />
+<figcaption aria-hidden="true"><p>Performance: individual models vs
+calibration-only ensemble</p></figcaption>
+</figure>
+
+<figure>
+<img src="media/image7.png" style="width:5.83333in;height:4.66517in"
+alt="Forecast metrics by window" />
+<figcaption aria-hidden="true"><p>Forecast metrics by
+window</p></figcaption>
+</figure>
+
+\[DOES THE ENSEMBLE BEAT ITS COMPONENTS? Note whether ensemble coverage
+sits above the nominal 95%. Linear pools retain disagreement between
+models rather than averaging it away, so over-coverage is expected
+behaviour, not a bug.\]
+
+# 5. JCF ensemble
+
+JCF blends the current window's calibration WIS with the immediately
+preceding window's forecast WIS:
+
+$$S_{i,w} = \lambda\,{WIS}_{i,w}^{cal} + (1 - \lambda)\,{WIS}_{i,w - 1}^{for},\quad\quad\omega_{i,w} = \frac{1/S_{i,w}}{\sum_{j}^{}1/S_{j,w}}.$$
+
+Window 1 has no preceding forecast, so it falls back to calibration WIS
+alone.
+
+<figure>
+<img src="media/image8.png" style="width:5.83333in;height:2.43289in"
+alt="JCF ensemble vs individual models, window 3" />
+<figcaption aria-hidden="true"><p>JCF ensemble vs individual models,
+window 3</p></figcaption>
+</figure>
+
+<figure>
+<img src="media/image9.png" style="width:5.83333in;height:3.75381in"
+alt="JCF ensemble forecast, window 5" />
+<figcaption aria-hidden="true"><p>JCF ensemble forecast, window
+5</p></figcaption>
+</figure>
+
+## 5.1 How the weights move
+
+<figure>
+<img src="media/image10.png" style="width:5.83333in;height:3.33435in"
+alt="JCF model weights by window, for each \lambda" />
+<figcaption aria-hidden="true"><p>JCF model weights by window, for each
+<span class="math inline"><em>λ</em></span></p></figcaption>
+</figure>
+
+\[THIS IS THE MOST INFORMATIVE FIGURE IN THE REPORT. Flat bars across
+windows mean JCF is barely changing anything. Bars that shift mean it is
+reallocating weight as the epidemic turns --- say which model gains,
+which loses, and at which window. If the weights collapse onto a single
+model, JCF is doing adaptive model *selection* rather than combination;
+that is worth stating explicitly.\]
+
+# 6. Sensitivity to $\lambda$
+
+<figure>
+<img src="media/image11.png" style="width:5.83333in;height:3.75381in"
+alt="Mean forecast WIS against \lambda" />
+<figcaption aria-hidden="true"><p>Mean forecast WIS against <span
+class="math inline"><em>λ</em></span></p></figcaption>
+</figure>
+
+\[IS THERE AN INTERIOR OPTIMUM? $\lambda = 1$ is calibration-only and
+$\lambda = 0$ is forecast-only, so an interior minimum is the case for
+JCF being worth its complexity. A monotone curve says one of the two
+endpoints is simply better. Note where the length-weighted point ("len")
+falls --- and remember that with a long calibration period it sits close
+to $\lambda = 1$ by arithmetic alone, so it has little room to differ.\]
+
+# 7. Scheme comparison
+
+<figure>
+<img src="media/image12.png" style="width:5.83333in;height:2.22949in"
+alt="Individual models vs calibration-only vs JCF" />
+<figcaption aria-hidden="true"><p>Individual models vs calibration-only
+vs JCF</p></figcaption>
+</figure>
+
+<figure>
+<img src="media/image13.png" style="width:5.83333in;height:3.64933in"
+alt="Forecast WIS by window, all schemes" />
+<figcaption aria-hidden="true"><p>Forecast WIS by window, all
+schemes</p></figcaption>
+</figure>
+
+**Table 1. Performance by weighting scheme.** *Paste*
+`ensemble_scheme_comparison.csv` *here.*
+
+  -----------------------------------------------------------------------------
+  Scheme                   MAE   MSE   Coverage   WIS   WIS (windows    Skill %
+                                                        2+)             
+  ------------------------ ----- ----- ---------- ----- --------------- -------
+  \[GLM\]                                                               
+
+  \[Richards\]                                                          
+
+  \[Gompertz\]                                                          
+
+  \[Ensemble:                                                           
+  calibration-only\]                                                    
+
+  \[Ensemble: JCF λ=0.50\]                                              
+
+  \[Ensemble: JCF λ=0.83                                                
+  (len)\]                                                               
+  -----------------------------------------------------------------------------
+
+Skill is relative to the calibration-only ensemble; positive means JCF
+improved on it.
+
+> **Read the windows-2+ column, not just the overall WIS.** Window 1 is
+> identical under JCF and calibration-only weighting by construction, so
+> including it dilutes any real difference toward zero. With $W = 5$,
+> only four windows carry information about whether JCF helped.
+
+**Verification.** `compare_ensembles_jcf` checks that $\lambda = 1$
+reproduces the calibration-only baseline exactly, since the two are
+algebraically the same scheme. Result: \[CHECK PASSED / did not pass ---
+if it did not, nothing below is interpretable until it does\].
+
+# 8. Discussion
+
+\[WRITE 3--5 PARAGRAPHS. Suggested ground to cover:\]
+
+**Did JCF help?** \[State the skill score plainly, including the sign. A
+negative result carefully demonstrated is a good outcome and should be
+reported as confidently as a positive one.\]
+
+**Why, mechanically?** \[Tie the answer back to the weight-trajectory
+figure. If JCF helped, it should be visible there as weight moving
+toward a model that went on to forecast well. If it did not help, was it
+because the weights barely moved, or because they moved the wrong way?\]
+
+**How does this depend on the epidemic phase?** \[Point at the by-window
+figure. Did the schemes diverge most around the peak, where models
+disagree most?\]
+
+**Limitations.** \[At minimum: only four informative windows; a single
+dataset; Monte Carlo noise in the ensemble WIS from trajectory sampling;
+and the fact that the length-weighted variant is constrained by the
+$C/H$ ratio you chose.\]
+
+**What would you do with more time?** \[E.g. vary the $C/H$ ratio, widen
+the model panel, or test whether the conclusion survives a different
+error structure.\]
+
+# 9. Reproducibility
+
+  ----------------------------------------------------------------------------
+  Item                                Value
+  ----------------------------------- ----------------------------------------
+  Toolbox                             QuantDiffForecast (MATLAB)
+
+  Ensemble                            Linear pool,
+                                      `getensemble_linearpool_from_curves.m`
+
+  Scoring                             Weighted interval score, `computeWIS.m`,
+                                      11 interval levels
+
+  Bootstrap replicates                \[300\]
+
+  Ensemble seed (`ens_seed`)          \[1\]
+
+  $\lambda$ values run                \[0, 0.25, 0.5, 0.75, length, 1\]
+
+  Scripts                             `create_ensemble_jcf.m`,
+                                      `run_jcf_sweep.m`,
+                                      `compare_ensembles_jcf.m`,
+                                      `plot_forecasts_jcf.m`
+  ----------------------------------------------------------------------------
+
+\[LIST ANY DEVIATIONS from the defaults --- changed bounds, a different
+model panel, a different window design.\]
+
 

@@ -9,6 +9,10 @@ This README has four sections:
 3. **Project datasets** — the five outbreak series (one simulated, four real), their sourcing, and what makes each one interesting.
 4. **Report template** — the section-by-section skeleton for your write-up.
 
+[![Walkthrough: multi-model forecasting and ensembles](https://img.youtube.com/vi/vKAEzVcH8AA/hqdefault.jpg)](https://www.youtube.com/watch?v=vKAEzVcH8AA)
+
+▶ **[Walkthrough: multi-model forecasting and ensembles](https://www.youtube.com/watch?v=vKAEzVcH8AA)** — watch before starting Section 2.
+
 ---
 
 # 1. Concept
